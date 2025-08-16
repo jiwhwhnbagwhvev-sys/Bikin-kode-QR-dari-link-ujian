@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Generator QR Ujian — Multi</title>
+  <style>
+    body{font-family:Arial,Segoe UI,Roboto,sans-serif;background:#f5f8ff;margin:0;padding:20px}
+    .card{max-width:1100px;margin:auto;padding:20px;background:#fff;border-radius:14px;box-shadow:0 8px 28px rgba(2,6,23,.1)}
+    h1{margin:0 0 10px;font-size:22px}
+    textarea{width:100%;min-height:90px;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:14px}
+    .controls{margin:12px 0;display:flex;flex-wrap:wrap;gap:8px}
+    button{padding:10px 14px;border:none;border-radius:8px;cursor:pointer;font-weight:bold}
+    .btn-primary{background:#2563eb;color:#fff}
+    .btn-muted{background:#e2e8f0}
+    .btn-danger{background:#ef4444;color:#fff}
+    #grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-top:20px}
+    .qr-card{padding:12px;text-align:center;border:1px solid #eee;border-radius:10px;background:#fafafa}
+    .qr-card canvas,.qr-card img{max-width:100%;height:auto}
+    .qr-link{font-size:12px;word-break:break-word;margin-top:6px}
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+<div class="card">
+  <h1>Generator QR — Link/Kode Ujian</h1>
+  <p>Masukkan <b>link Google Form</b> atau beberapa link/kode ujian (pisahkan dengan Enter).<br>Contoh:<br>
+  <code>https://docs.google.com/forms/abcd...</code><br>
+  <code>https://docs.google.com/forms/efgh...</code></p>
+
+  <textarea id="inputUrls" placeholder="Tempel satu atau banyak link/kode ujian..."></textarea>
+
+  <div class="controls">
+    <button id="generateBtn" class="btn-primary">🔍 Buat QR</button>
+    <button id="downloadAllBtn" class="btn-muted">⬇ Unduh Semua QR</button>
+    <button id="printBtn" class="btn-danger">🖨 Cetak Semua</button>
+  </div>
+
+  <div id="grid"></div>
+</div>
+
+<script>
+(function(){
+  const input = document.getElementById('inputUrls');
+  const generateBtn = document.getElementById('generateBtn');
+  const grid = document.getElementById('grid');
+  const printBtn = document.getElementById('printBtn');
+  const downloadAllBtn = document.getElementById('downloadAllBtn');
+
+  const QR_SIZE = 180;
+
+  function clearGrid(){
+    grid.innerHTML = '';
+  }
+
+  function makeQR(text, container){
+    new QRCode(container, {
+      text: text,
+      width: QR_SIZE,
+      height: QR_SIZE,
+      colorDark: "#000000",
+      colorLight: "#ffffff",
+      correctLevel: QRCode.CorrectLevel.H
+    });
+  }
+
+  generateBtn.addEventListener('click', ()=>{
+    clearGrid();
+    const lines = input.value.trim().split(/\n+/).filter(l => l.trim() !== '');
+    if(lines.length === 0){ alert('Masukkan link atau kode ujian dulu.'); return; }
+
+    lines.forEach((line,i)=>{
+      const div = document.createElement('div');
+      div.className = 'qr-card';
+      const qrbox = document.createElement('div');
+      div.appendChild(qrbox);
+      const lbl = document.createElement('div');
+      lbl.className = 'qr-link';
+      lbl.textContent = line;
+      div.appendChild(lbl);
+      grid.appendChild(div);
+      makeQR(line, qrbox);
+    });
+  });
+
+  // Cetak semua QR
+  printBtn.addEventListener('click', ()=>{
+    if(grid.children.length === 0){ alert('Belum ada QR dibuat.'); return; }
+    const w = window.open('', '_blank');
+    w.document.write('<html><head><title>Cetak QR</title></head><body>');
+    w.document.write('<h2 style="font-family:sans-serif;text-align:center">QR Ujian</h2>');
+    w.document.write(grid.innerHTML);
+    w.document.write('</body></html>');
+    w.document.close();
+    w.print();
+  });
+
+  // Unduh semua QR jadi PNG (satu per satu)
+  downloadAllBtn.addEventListener('click', ()=>{
+    if(grid.children.length === 0){ alert('Belum ada QR dibuat.'); return; }
+    [...grid.querySelectorAll('.qr-card')].forEach((card,i)=>{
+      const canvas = card.querySelector('canvas');
+      if(canvas){
+        const a = document.createElement('a');
+        a.href = canvas.toDataURL('image/png');
+        a.download = 'qr-ujian-'+(i+1)+'.png';
+        a.click();
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>
